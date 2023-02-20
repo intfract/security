@@ -5,7 +5,7 @@ const app = express()
 app.use(express.static('public'))
 
 app.get('/', async (req, res) => {
-  res.send(render('views', '', { message: 'Hello!', todo: ['Eat', 'Code'] })) 
+  res.send(render('views', '', { message: 'Hello!' })) 
 })
 
 app.listen(3000)
