@@ -11,19 +11,13 @@ const app = express()
 
 const port = process.env.PORT || 3000
 
-try {
-  const scripts = fs.readdirSync('client').filter(file => file.endsWith('.js'))
-  for (const script of scripts) {
-    const file = fs.readFileSync(`client/${script}`, 'utf-8').replace('$', `'https://${port}-${process.env.GITPOD_WORKSPACE_URL.replace('https://', '')}/ip'`)
-    fs.writeFileSync(`public/${script}`, file)
+function firewall(req, res, next) {
+  const blacklist = [] // add bad IP addresses
+  if (blacklist.includes(req.ip)) {
+    return res.status(401).send('SUS')
   }
-  console.log('Copied client scripts!')
-} catch (e) {
-  console.log(e)
+  next()
 }
-
-app.use(express.static('public'))
-app.use(bodyParser.json())
 
 async function post(data) {
   const json = JSON.stringify([data])
@@ -38,32 +32,49 @@ async function post(data) {
   return await response.json()
 }
 
+try {
+  const scripts = fs.readdirSync('client').filter(file => file.endsWith('.js'))
+  for (const script of scripts) {
+    const file = fs.readFileSync(`client/${script}`, 'utf-8').replace('$', `'https://${port}-${process.env.GITPOD_WORKSPACE_URL.replace('https://', '')}/ip'`)
+    fs.writeFileSync(`public/${script}`, file)
+  }
+  console.log('Copied client scripts!')
+} catch (e) {
+  console.log(e)
+}
+
+app.use(express.static('public'))
+app.use(bodyParser.json())
+app.use(firewall)
+
 app.get('/', async (req, res) => {
   res.send(render('views', '', { message: '' })) 
 })
 
 app.post('/ip', async (req, res) => {
   const { ip } = req.body
-  const check = await req.headers['x-forwarded-for'] || req.socket.remoteAddress // easily deceived
-  if (ip === check) {
-    try {
-      const response = await fetch(`https://vpnapi.io/api/${ip}?key=${process.env.vpn}`)
-      const json = await response.json()
-      console.log(json)
-      res.json({
-        message: 'success',
+  const origin = await req.headers['x-forwarded-for'] || req.socket.remoteAddress // easily deceived
+  try {
+    const response = await fetch(`https://vpnapi.io/api/${ip}?key=${process.env.vpn}`)
+    const { security, location } = await response.json()
+    console.log(ip, security)
+    if (ip === origin) {
+      post({ ip, security, location })
+      res.status(200).json({
+        security
       })
-    } catch (e) {
-      console.log(e)
-      res.json({
-        error: 'invalid',
-        message: 'invalid ip provided',
+    } else {
+      // someone is using inspect element
+      res.status(401).json({
+        error: 'sus',
+        message: 'suspicious activity',
       })
     }
-  } else {
+  } catch (e) {
+    console.log(e)
     res.json({
-      error: 'sus',
-      message: 'suspicious request',
+      error: 'invalid',
+      message: 'invalid ip provided',
     })
   }
 })

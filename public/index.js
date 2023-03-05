@@ -11,7 +11,13 @@ async function grab() {
       'Content-Type': 'application/json',
     }
   })
-  console.log(await res.json())
+  const json = await res.json()
+  const e = await document.createElement('ul')
+  for (const [key, value] of Object.entries(await json.security)) {
+    console.log(key, value)
+    e.innerHTML += await `${value ? `<li>${key}</li>` : ''}`
+  }
+  await document.body.appendChild(e)
 }
 
 grab()
