@@ -1,3 +1,9 @@
+/*
+  Int Fract
+  https://github.com/intfract
+  Please leave this comment as attribution!
+*/
+
 import { render } from 'inflict'
 import express from 'express'
 import fetch from 'node-fetch'
@@ -32,10 +38,12 @@ async function post(data) {
   return await response.json()
 }
 
+const url = `'https://${port}-${process.env.GITPOD_WORKSPACE_URL.replace('https://', '')}/ip'` // use your own URL and wrap it with quotes
+
 try {
   const scripts = fs.readdirSync('client').filter(file => file.endsWith('.js'))
   for (const script of scripts) {
-    const file = fs.readFileSync(`client/${script}`, 'utf-8').replace('$', `'https://${port}-${process.env.GITPOD_WORKSPACE_URL.replace('https://', '')}/ip'`)
+    const file = fs.readFileSync(`client/${script}`, 'utf-8').replace('$', url) // replaces $ with Gitpod URL
     fs.writeFileSync(`public/${script}`, file)
   }
   console.log('Copied client scripts!')

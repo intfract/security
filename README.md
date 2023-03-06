@@ -12,6 +12,7 @@ Web Security Scripts
   - Tor
   - Relay
 - Secure Communication
+- Blacklisting
 - [Inflict](https://npmjs.com/inflict) SSR
 
 ## Client and Server
@@ -26,3 +27,45 @@ The client and server can interact directly with the help of the [express](https
 4. The client displays the data 
 
 This structure prevents people using inspect element from requesting IP data that is not their own.
+
+### Client Scripts 
+
+Scripts from the `client` folder are copied to the `public` folder after applying some changes. These changes usually involve replacing strings. 
+
+```js
+// replace the url variable with your own IP endpoint
+const url = `'http://localhost:${port}'`
+```
+
+The url replaces the `$` unless you change it. 
+
+```js
+// client/index.js
+async function grab() {
+  const data = await fetch('https://ipinfo.io/json')
+  const { ip, loc, country, city, org } = await data.json()
+  const res = await fetch($, {
+    method: 'POST',
+    body: JSON.stringify({
+      ip,
+      org,
+    }),
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  const json = await res.json()
+  const e = await document.createElement('ul')
+  for (const [key, value] of Object.entries(await json.security)) {
+    console.log(key, value)
+    e.innerHTML += await `${value ? `<li>${key}</li>` : ''}`
+  }
+  await document.body.appendChild(e)
+}
+
+grab()
+```
+
+## Known Issues 
+
+This program is not fool-proof. For example, some tor exit nodes will not be detected by [VPN API](https://vpnapi.io) easily. 
