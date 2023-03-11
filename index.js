@@ -18,8 +18,9 @@ const app = express()
 const port = process.env.PORT || 3000
 
 function firewall(req, res, next) {
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
   const blacklist = [] // add bad IP addresses
-  if (blacklist.includes(req.ip)) {
+  if (blacklist.includes(ip)) {
     return res.status(401).send('SUS')
   }
   next()
