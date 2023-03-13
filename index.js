@@ -10,6 +10,15 @@ import fetch from 'node-fetch'
 import bodyParser from 'body-parser'
 import fs from 'fs'
 
+import Onionoo from 'onionoo'
+const onionoo = new Onionoo()
+
+const query = {
+  limit: 1,
+  running: true,
+  order: '-consensus_weight',
+}
+
 import * as dotenv from 'dotenv'
 dotenv.config()
 
@@ -35,7 +44,7 @@ async function post(data) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${process.env.crud}`
     },
-  })
+  }) // free HTTP database
   return await response.json()
 }
 
@@ -64,16 +73,21 @@ app.post('/ip', async (req, res) => {
   const { ip } = req.body
   const origin = await req.headers['x-forwarded-for'] || req.socket.remoteAddress // easily deceived
   try {
-    const response = await fetch(`https://vpnapi.io/api/${ip}?key=${process.env.vpn}`)
+    query['search'] = ip
+    const { body } = await onionoo.summary(query)
+    console.log(body)
+    let tor = new Boolean(body.relays.length)
+    const response = await fetch(`https://vpnapi.io/api/${ip}?key=${process.env.vpn}`) // VPN API
     const { security, location } = await response.json()
     console.log(ip, security)
     if (ip === origin) {
       post({ ip, security, location })
       res.status(200).json({
-        security
+        security,
+        tor,
       })
     } else {
-      // someone is using inspect element
+      // someone is using inspect element to send requests
       res.status(401).json({
         error: 'sus',
         message: 'suspicious activity',
@@ -81,7 +95,7 @@ app.post('/ip', async (req, res) => {
     }
   } catch (e) {
     console.log(e)
-    res.json({
+    res.status(404).json({
       error: 'invalid',
       message: 'invalid ip provided',
     })

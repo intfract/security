@@ -13,7 +13,9 @@ Web Security Scripts
   - Relay
 - Secure Communication
 - Blacklisting
+- Inspect Element Disabler
 - [Inflict](https://npmjs.com/inflict) SSR
+- [Onionoo](https://npmjs.com/onionoo) Tor Detection
 
 ## Client and Server
 
@@ -66,6 +68,26 @@ async function grab() {
 grab()
 ```
 
-## Known Issues 
+### Kill Inspect Element 
 
-This program is not fool-proof. For example, some tor exit nodes will not be detected by [VPN API](https://vpnapi.io) easily. 
+Chrome DevTools or any other web inspection are virtually inaccessable thanks to the `inspect.js` file. 
+
+## Advanced Tor Detection 
+
+Sometimes [VPN API](https://vpnapi.io) can not detect tor, but the new update is **foolproof** and uses Onionoo to search for tor relays.
+
+```js
+import Onionoo from 'onionoo'
+const onionoo = new Onionoo()
+
+const query = {
+  limit: 1,
+  running: true,
+  order: '-consensus_weight',
+}
+
+query['search'] = ip
+const { body } = await onionoo.summary(query) // this would be inside an async function
+```
+
+You can forget about getting an API key if you only want to detect tor. 
